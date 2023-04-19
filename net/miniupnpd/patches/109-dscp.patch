@@ -1,0 +1,84 @@
+diff -u -r a/netfilter/iptcrdr.c b/netfilter/iptcrdr.c
+--- a/netfilter/iptcrdr.c	2023-04-19 17:13:51.886003000 +0800
++++ b/netfilter/iptcrdr.c	2023-04-19 17:20:18.394386807 +0800
+@@ -284,7 +284,7 @@
+ 	UNUSED(ifname);
+ 	UNUSED(eport);
+ 	UNUSED(desc);
+-
++	addpeerdscprule(proto, 0x2, iaddr, iport, rhost, iport);
+ 	return add_filter_rule(proto, rhost, iaddr, iport);
+ }
+ 
+@@ -711,11 +711,11 @@
+ 			i = 0;
+ 			/* we must find the right index for the filter rule */
+ #ifdef IPTABLES_143
+-			for(e = iptc_first_rule(miniupnpd_forward_chain, h);
++			for(e = iptc_first_rule("FORWARD", h);
+ 			    e;
+ 				e = iptc_next_rule(e, h), i++)
+ #else
+-			for(e = iptc_first_rule(miniupnpd_forward_chain, &h);
++			for(e = iptc_first_rule("FORWARD", &h);
+ 			    e;
+ 				e = iptc_next_rule(e, &h), i++)
+ #endif
+@@ -743,7 +743,7 @@
+ 						continue;
+ 					index = i;
+ 					syslog(LOG_INFO, "Trying to delete filter rule at index %u", index);
+-					r = delete_rule_and_commit(index, h, miniupnpd_forward_chain, "delete_filter_rule");
++					r = delete_rule_and_commit(index, h, "FORWARD", "delete_filter_rule");
+ 					h = NULL;
+ 					break;
+ 				}
+@@ -1348,9 +1348,9 @@
+ 	e->ip.proto = proto;
+ 	/* TODO: Fill port matches and SNAT */
+ 	if(proto == IPPROTO_TCP) {
+-		match = get_tcp_match(rport, iport);
++		match = get_tcp_match(rport, 0);
+ 	} else {
+-		match = get_udp_match(rport, iport);
++		match = get_udp_match(rport, 0);
+ 	}
+ #ifdef NFC_UNKNOWN
+ 	e->nfcache = NFC_UNKNOWN;
+@@ -1359,9 +1359,8 @@
+ #ifdef NFC_IP_DST_PT
+ 	e->nfcache |= NFC_IP_DST_PT;
+ #endif
+-#ifdef NFC_IP_SRC_PT
+-	e->nfcache |= NFC_IP_SRC_PT;
+-#endif
++	e->ip.dst.s_addr = inet_addr(iaddr);
++	e->ip.dmsk.s_addr = INADDR_NONE;
+ 	tmp = realloc(e, sizeof(struct ipt_entry)
+ 	               + match->u.match_size
+ 				   + target->u.target_size);
+@@ -1382,20 +1381,15 @@
+ 	                 + match->u.match_size
+ 					 + target->u.target_size;
+ 
+-	/* internal host */
+-	if(iaddr && (iaddr[0] != '\0') && (0 != strcmp(iaddr, "*")))
+-	{
+-		e->ip.src.s_addr = inet_addr(iaddr);
+-		e->ip.smsk.s_addr = INADDR_NONE;
+-	}
++	
+ 	/* remote host */
+ 	if(rhost && (rhost[0] != '\0') && (0 != strcmp(rhost, "*")))
+ 	{
+-		e->ip.dst.s_addr = inet_addr(rhost);
+-		e->ip.dmsk.s_addr = INADDR_NONE;
++		e->ip.src.s_addr = inet_addr(rhost);
++		e->ip.smsk.s_addr = INADDR_NONE;
+ 	}
+ 
+-	r = iptc_init_verify_and_append("mangle", miniupnpd_nat_chain, e,
++	r = iptc_init_verify_and_append("mangle", "FORWARD", e,
+ 	                                "addpeerDSCPrule");
+ 	free(target);
+ 	free(match);
