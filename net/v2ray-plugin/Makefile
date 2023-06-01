@@ -6,12 +6,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=v2ray-plugin
-PKG_VERSION:=5.1.0
-PKG_RELEASE:=$(AUTORELEASE)
+PKG_VERSION:=5.5.0
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/teddysun/v2ray-plugin/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=8793a4d94131271f3c48b7e2a4d9c0b97148192b96e275717fbc621d8927f7de
+PKG_HASH:=b1d7560d07e16123460a031f3e19cd8af7192a199f6428c1efc690d72ef8d2f5
 
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=LICENSE
@@ -25,7 +25,7 @@ GO_PKG:=github.com/shadowsocks/v2ray-plugin
 GO_PKG_LDFLAGS_X:=main.VERSION=v$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
-include ../../lang/golang/golang-package.mk
+include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
 
 define Package/v2ray-plugin
   SECTION:=net
